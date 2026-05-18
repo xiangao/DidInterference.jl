@@ -1,5 +1,7 @@
 # DidInterference.jl
 
+[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://xiangao.github.io/DidInterference.jl/)
+
 Doubly robust difference-in-differences with spatial interference, in Julia. Companion to the R package [`didint`](https://github.com/xiangao/didint).
 
 Implements the doubly robust direct ATT estimators of:
@@ -26,30 +28,15 @@ using Pkg
 Pkg.add(url = "https://github.com/xiangao/DidInterference.jl")
 ```
 
-## Minimal example
+## Documentation & vignettes
 
-```julia
-using DidInterference, DataFrames
+Full documentation: **<https://xiangao.github.io/DidInterference.jl/>**
 
-# wide-format 2-period data
-res = did_int_2x2(my_panel;
-    yname     = :Y_post,
-    yname_pre = :Y_pre,
-    treat     = :W,
-    exposure  = :G,
-    g         = 1,
-    covariates = [:z1, :z2],
-    trim       = 0.01)
-
-println(res.estimate)   # DR direct ATT at G == 1
-println(res.ci)         # 95% CI
-```
-
-## Vignettes & examples
-
-| Resource | Description |
+| Page | Description |
 |---|---|
-| [`examples/lattice_dgp.jl`](https://github.com/xiangao/DidInterference.jl/blob/master/examples/lattice_dgp.jl) | Runnable worked example: simulates a 2×2 lattice DGP with binary direct + spillover effects, fits `did_int_2x2` with `trim = 0.01`, runs a 100-rep Monte Carlo (bias, empirical SD, coverage), then demonstrates `did_int_staggered` on a 3-cohort 5-period lattice. Run with `julia --project=. examples/lattice_dgp.jl`. |
-| [`test/runtests.jl`](https://github.com/xiangao/DidInterference.jl/blob/master/test/runtests.jl) | 12 tests across all three estimators, including the z-dependent-treatment-effect regression test that pins the paper's full-population estimand. |
+| [Home](https://xiangao.github.io/DidInterference.jl/) | Overview, install, motivation |
+| [Getting Started](https://xiangao.github.io/DidInterference.jl/vignettes/01_getting_started/) | 2×2 base case on a synthetic lattice DGP, single fit + 100-rep Monte Carlo for bias/coverage |
+| [Staggered Adoption](https://xiangao.github.io/DidInterference.jl/vignettes/02_staggered/) | Multi-cohort DR DATT with joint-IF aggregation and per-cohort/event-time aggregates |
+| [Reference](https://xiangao.github.io/DidInterference.jl/reference/) | Full API docs |
 
-The companion R package [`didint`](https://github.com/xiangao/didint) ships a full Brazil Amazon Priority List replication vignette (Xu 2026 Section III) — see [`vignettes/brazil_amazon.Rmd`](https://github.com/xiangao/didint/blob/master/vignettes/brazil_amazon.Rmd) for the worked end-to-end real-data example. The two packages use the same DR formula and the same trim / aggregation behaviour, so estimates match to MC noise.
+The companion R package [`didint`](https://github.com/xiangao/didint) ships a Brazil Amazon Priority List replication vignette (Xu 2026 Section III) — see its [pkgdown site](https://xiangao.github.io/didint/) for the end-to-end real-data walkthrough. The two packages use the same DR formula and trim / aggregation behaviour, so estimates match to MC noise.
