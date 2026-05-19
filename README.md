@@ -35,8 +35,8 @@ Full documentation: **<https://xiangao.github.io/DidInterference.jl/>**
 | Page | Description |
 |---|---|
 | [Home](https://xiangao.github.io/DidInterference.jl/) | Overview, install, motivation |
-| [Getting Started](https://xiangao.github.io/DidInterference.jl/vignettes/01_getting_started/) | 2×2 base case on a synthetic lattice DGP, single fit + 100-rep Monte Carlo for bias/coverage |
-| [Staggered Adoption](https://xiangao.github.io/DidInterference.jl/vignettes/02_staggered/) | Multi-cohort DR DATT with joint-IF aggregation and per-cohort/event-time aggregates |
-| [Reference](https://xiangao.github.io/DidInterference.jl/reference/) | Full API docs |
+| [Getting Started](https://xiangao.github.io/DidInterference.jl/dev/vignettes/01_getting_started/) | 2×2 base case on a synthetic lattice DGP, single fit + 100-rep Monte Carlo for bias/coverage |
+| [Staggered Adoption](https://xiangao.github.io/DidInterference.jl/dev/vignettes/02_staggered/) | Multi-cohort DR DATT with joint-IF aggregation and per-cohort/event-time aggregates |
+| [Reference](https://xiangao.github.io/DidInterference.jl/dev/reference/) | Full API. Each function has its docstring followed by a live `@example` block showing real output |
 
 The companion R package [`didint`](https://github.com/xiangao/didint) ships a Brazil Amazon Priority List replication vignette (Xu 2026 Section III) — see its [pkgdown site](https://xiangao.github.io/didint/) for the end-to-end real-data walkthrough. The two packages use the same DR formula and trim / aggregation behaviour, so estimates match to MC noise.
