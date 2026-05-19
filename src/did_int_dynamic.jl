@@ -11,6 +11,26 @@ influence functions (same units across periods).
 # Returns
 NamedTuple with `per_period::DataFrame` (rows: event_time, estimate, se,
 ci_lo, ci_hi) and `agg::NamedTuple` with the cross-period average.
+
+# Examples
+```julia
+using DidInterference, DataFrames, Random
+Random.seed!(2)
+N, T_post = 600, 4
+df = DataFrame(W = rand(0:1, N), G = rand(0:1, N),
+               z = randn(N), Y_pre = randn(N))
+for k in 1:T_post
+    df[!, Symbol("Y_post_\$k")] =
+        df.Y_pre .+ 0.2 .* df.z .+ 1.5 .* df.W .+ 0.5 .* df.G .* df.W .+ randn(N)
+end
+
+res = did_int_dynamic(df;
+    yname_pre = :Y_pre,
+    ynames = [Symbol("Y_post_\$k") for k in 1:T_post],
+    treat = :W, exposure = :G, g = 1,
+    covariates = [:z], trim = 0.01)
+res.per_period
+```
 """
 function did_int_dynamic(data::DataFrame;
                          yname_pre::Symbol,

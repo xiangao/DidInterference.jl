@@ -18,6 +18,26 @@ common-adoption-timing case (Xu 2023). Mirrors the R `did_int_2x2()`.
 # Returns
 NamedTuple with `estimate`, `se`, `ci`, `n_treated`, `n_control`,
 `n_total`, `n_at_g`, `n_dropped`, `exposure_g`, `influence`.
+
+# Examples
+```julia
+using DidInterference, DataFrames, Random
+Random.seed!(1)
+N = 800
+df = DataFrame(
+    W = rand(0:1, N),
+    G = rand(0:1, N),
+    z = randn(N),
+    Y_pre  = randn(N),
+)
+df.Y_post = df.Y_pre .+ 0.2 .* df.z .+ 1.5 .* df.W .+ 0.5 .* df.G .* df.W .+ randn(N)
+
+res = did_int_2x2(df;
+    yname = :Y_post, yname_pre = :Y_pre,
+    treat = :W, exposure = :G, g = 1,
+    covariates = [:z], trim = 0.01)
+res.estimate, res.ci
+```
 """
 function did_int_2x2(data::DataFrame;
                      yname::Symbol,

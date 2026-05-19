@@ -13,6 +13,30 @@ correctly accounts for shared units across cells.
 NamedTuple with `per_cell::DataFrame`, `agg` (with `simple`,
 `event_time`, `cohort` sub-aggregates), `influence::Vector{Vector}`,
 `cell_ids::Vector{Vector}`, `exposure_g`, `pre_period`, `alpha`.
+
+# Examples
+```julia
+using DidInterference, DataFrames, Random
+Random.seed!(7)
+N, T = 1500, 5
+# Cohorts: half treated at t=2, quarter at t=3, quarter never
+cohort = rand([2.0, 3.0, Inf], N)
+rows = NamedTuple[]
+for i in 1:N, t in 1:T
+    W_t   = Int(cohort[i] <= t)
+    G_t   = rand() < 0.4 ? 1 : 0
+    z_i   = randn()
+    Y     = 0.5 * z_i + 1.5 * W_t + 0.5 * G_t * W_t + randn()
+    push!(rows, (id = i, time = t, cohort = cohort[i],
+                 z = z_i, Y = Y, G = G_t))
+end
+df = DataFrame(rows)
+
+res = did_int_staggered(df;
+    yname = :Y, time = :time, id = :id,
+    cohort = :cohort, exposure = :G, g = 1, covariates = [:z])
+res.per_cell
+```
 """
 function did_int_staggered(data::DataFrame;
                            yname::Symbol, time::Symbol, id::Symbol,
