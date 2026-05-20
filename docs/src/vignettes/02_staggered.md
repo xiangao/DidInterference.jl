@@ -92,6 +92,6 @@ gave 84 % CI coverage; the joint-IF stacking restores it to 96 %.
 The R companion package `didint` reports the same comparison in its
 [`inst/sims/findings.md`](https://github.com/xiangao/didint/blob/master/inst/sims/findings.md).
 
-Real-world example: see the R `didint` package's Brazil Amazon
-Priority List vignette for an end-to-end staggered-DiD-with-
-interference fit on the Assunção et al. (2023) data.
+For an applied example, see the R `didint` vignette on the Brazil Amazon
+Priority List. It fits the staggered-DiD-with-interference design on the
+Assunção et al. (2023) data.

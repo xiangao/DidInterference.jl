@@ -1,7 +1,6 @@
 # DidInterference.jl
 
-Doubly robust difference-in-differences with spatial interference, in
-Julia. Companion to the R package
+Difference-in-differences with spatial interference, in Julia. Companion to the R package
 [`didint`](https://github.com/xiangao/didint).
 
 Implements the doubly robust direct ATT estimators of:
@@ -13,15 +12,10 @@ Implements the doubly robust direct ATT estimators of:
 
 ## Why
 
-Standard DiD assumes one unit's outcome does not depend on another's
-treatment (SUTVA). With spatial spillovers — a treated municipality
-affecting deforestation in neighbouring ones, a vaccinated household
-reducing transmission to nearby households, a labour-market policy in
-one commuting zone changing flows to its neighbours — the canonical
-DiD estimand loses its causal interpretation. Xu's framework keeps the
-identifying logic of conditional parallel trends but adds an exposure
-mapping ``G_{it} = G(i, W_{-it})`` for unit ``i``'s neighbourhood
-treatment status.
+Standard DiD assumes one unit's outcome does not depend on another unit's
+treatment. This is often the wrong assumption for spatial policies. Xu's setup
+keeps the conditional-parallel-trends comparison but adds an exposure mapping
+``G_{it} = G(i, W_{-it})`` for unit ``i``'s neighborhood treatment status.
 
 ## Three estimators
 
@@ -31,12 +25,10 @@ treatment status.
 - [`did_int_staggered`](@ref) — staggered adoption with not-yet-treated
   comparison groups, joint-IF aggregation across cells (Xu 2026 §II).
 
-All three share a single doubly robust core: three propensity models
-(cohort, treated-exposure, comparison-exposure) plus two
-outcome-change regressions, combined with the standard DR plug-in
-formula. Standard errors come from the empirical influence function.
-An optional `trim` argument matches Xu's 0.01 trimming in the Brazil
-application.
+All three use the same ingredients: three propensity models, two outcome-change
+regressions, and the doubly robust plug-in formula. Standard errors come from
+the empirical influence function. The optional `trim` argument matches Xu's
+Brazil application.
 
 ## Install
 
@@ -63,8 +55,8 @@ println(res.estimate)   # DR direct ATT at G == 1
 println(res.ci)         # 95% CI
 ```
 
-See the **Vignettes** in the sidebar for runnable end-to-end examples,
-and the [Reference](@ref API-Reference) page for the full API.
+See the vignettes in the sidebar for examples and the [Reference](@ref
+API-Reference) page for the API.
 
 The companion R package
 [`didint`](https://github.com/xiangao/didint) ships a Brazil Amazon
