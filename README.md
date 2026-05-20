@@ -2,7 +2,9 @@
 
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://xiangao.github.io/DidInterference.jl/)
 
-Doubly robust difference-in-differences with spatial interference, in Julia. Companion to the R package [`didint`](https://github.com/xiangao/didint).
+`DidInterference.jl` implements difference-in-differences estimators that allow
+spatial interference. It is the Julia companion to the R package
+[`didint`](https://github.com/xiangao/didint).
 
 Implements the doubly robust direct ATT estimators of:
 
@@ -11,7 +13,11 @@ Implements the doubly robust direct ATT estimators of:
 
 ## Why
 
-Standard DiD assumes one unit's outcome doesn't depend on another's treatment. With spatial spillovers — a treated municipality affecting its neighbours, a vaccine reducing transmission across the social network — the canonical DiD estimand loses its causal interpretation. Xu's framework keeps DiD's identifying logic while explicitly modelling the exposure mapping.
+Standard DiD assumes one unit's outcome does not depend on another unit's
+treatment. That is often too strong for spatial policies. A municipality on the
+priority list can affect nearby municipalities; a health intervention can
+change exposure in a network. Xu's setup keeps the DiD comparison but adds an
+exposure mapping, so the estimand is explicit about the spillover structure.
 
 ## Three estimators
 
@@ -19,7 +25,10 @@ Standard DiD assumes one unit's outcome doesn't depend on another's treatment. W
 - `did_int_dynamic` — event study with common adoption timing (Xu 2026 §I).
 - `did_int_staggered` — staggered adoption with not-yet-treated comparison groups, joint-IF aggregation across cells (Xu 2026 §II).
 
-All three use the same core: three propensity-score models (cohort, treated-exposure, comparison-exposure) + two outcome-change regressions + the standard DR plug-in formula. Standard errors come from the empirical influence function. An optional `trim` argument matches Xu's 0.01 trimming used in the Brazil application.
+All three use the same ingredients: three propensity-score models, two
+outcome-change regressions, and the doubly robust plug-in formula. Standard
+errors come from the empirical influence function. The optional `trim` argument
+matches the trimming used in Xu's Brazil application.
 
 ## Install
 
@@ -39,4 +48,7 @@ Full documentation: **<https://xiangao.github.io/DidInterference.jl/>**
 | [Staggered Adoption](https://xiangao.github.io/DidInterference.jl/dev/vignettes/02_staggered/) | Multi-cohort DR DATT with joint-IF aggregation and per-cohort/event-time aggregates |
 | [Reference](https://xiangao.github.io/DidInterference.jl/dev/reference/) | Full API. Each function has its docstring followed by a live `@example` block showing real output |
 
-The companion R package [`didint`](https://github.com/xiangao/didint) ships a Brazil Amazon Priority List replication vignette (Xu 2026 Section III) — see its [pkgdown site](https://xiangao.github.io/didint/) for the end-to-end real-data walkthrough. The two packages use the same DR formula and trim / aggregation behaviour, so estimates match to MC noise.
+The companion R package [`didint`](https://github.com/xiangao/didint) includes
+the Brazil Amazon Priority List replication vignette from Xu (2026, Section
+III). The two packages use the same DR formula and the same trimming and
+aggregation conventions.
