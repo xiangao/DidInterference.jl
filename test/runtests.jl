@@ -152,3 +152,25 @@ end
                         exposure = :G, g = 1, covariates = [:z])
     @test res_g.exposure_g == 1
 end
+
+@testset "did_int_2x2 poisson MC bias/coverage" begin
+    truth = exp(0.4) - 1
+    R = 300
+    ests = Vector{Float64}(undef, R); cov = falses(R)
+    Threads.@threads for r in 1:R
+        rng = MersenneTwister(1000 + r); N = 3000
+        z = randn(rng, N); W = Int.(rand(rng, N) .< 0.5); Ig = Int.(rand(rng, N) .< 0.5)
+        Ypre  = rand.(rng, Poisson.(exp.(0.5 .+ 0.3 .* z)))
+        Ypost = rand.(rng, Poisson.(exp.(0.5 .+ 0.3 .* z .+ 0.2 .+ 0.4 .* (W .* Ig))))
+        df = DataFrame(Ypre = float.(Ypre), Ypost = float.(Ypost), G = Ig, W = W, z = z)
+        res = did_int_2x2(df; yname = :Ypost, yname_pre = :Ypre, treat = :W,
+                          exposure = :G, g = 1, covariates = [:z], family = :poisson)
+        ests[r] = res.estimate
+        cov[r] = res.ci[1] <= truth <= res.ci[2]
+    end
+    bias = mean(ests) - truth
+    coverage = mean(cov)
+    @info "2x2 poisson MC" bias coverage
+    @test abs(bias) < 0.02
+    @test 0.90 <= coverage <= 0.98
+end
