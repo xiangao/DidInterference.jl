@@ -5,6 +5,7 @@ using Random
 using LinearAlgebra
 using Statistics
 using StatsBase
+using Distributions
 
 # Lattice DGP with binary direct + spillover effects. Same structure as
 # the R smoke test in tests/testthat/test-2x2-smoke.R.
@@ -119,4 +120,20 @@ end
     @test all(res.per_cell.cohort .∈ Ref([2, 3, 4]))
     @test all(res.per_cell.time .>= res.per_cell.cohort)
     @test abs(res.agg.simple.estimate - 2.0) < 0.30
+end
+
+@testset "_dr_atte_mult smoke" begin
+    using DidInterference: _dr_atte_mult
+    Random.seed!(11)
+    N = 4000
+    z = randn(N)
+    W = Int.(rand(N) .< 0.5)
+    Ig = Int.(rand(N) .< 0.5)
+    Ypre  = rand.(Poisson.(exp.(0.5 .+ 0.3 .* z)))
+    μpost = exp.(0.5 .+ 0.3 .* z .+ 0.2 .+ 0.4 .* (W .* Ig))
+    Ypost = rand.(Poisson.(μpost))
+    res = _dr_atte_mult(W, Ig, DataFrame(z = z), float.(Ypre), float.(Ypost))
+    @test res.scale == :multiplicative
+    @test res.se > 0
+    @test abs(res.estimate - (exp(0.4) - 1)) < 4 * res.se
 end
