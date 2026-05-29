@@ -20,6 +20,7 @@ makedocs(
         "Vignettes"   => [
             "Getting Started"      => "vignettes/01_getting_started.md",
             "Staggered Adoption"   => "vignettes/02_staggered.md",
+            "Count Outcomes"       => "vignettes/03_multiplicative.md",
         ],
         "Reference"   => "reference.md",
     ],

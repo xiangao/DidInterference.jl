@@ -30,6 +30,15 @@ outcome-change regressions, and the doubly robust plug-in formula. Standard
 errors come from the empirical influence function. The optional `trim` argument
 matches the trimming used in Xu's Brazil application.
 
+## Count outcomes
+
+All three estimators accept `family = :poisson` for count outcomes. This gives a
+**multiplicative (rate-ratio) ATT**: `θ(g)` is the ratio of the treated group's
+growth ratio to the control group's counterfactual growth ratio, minus one. It is
+scale-invariant and well-defined with zeros — unlike `log(1 + Y)` transformations
+(Chen & Roth 2024). The default `family = :gaussian` is the existing additive
+estimator.
+
 ## Install
 
 ```julia

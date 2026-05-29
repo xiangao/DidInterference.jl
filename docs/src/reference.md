@@ -36,6 +36,24 @@ res = did_int_2x2(df;
  ci       = round.(res.ci, digits = 3))
 ```
 
+### Count outcomes: `family = :poisson`
+
+For count outcomes, `family = :poisson` estimates a **multiplicative** (rate-ratio)
+ATT at exposure `g` instead of the additive default — scale-invariant and defined
+with zeros.
+
+```@example poisson
+using DidInterference, DataFrames, Random, Distributions
+Random.seed!(7); N = 4000
+z = randn(N); W = Int.(rand(N) .< 0.5); G = Int.(rand(N) .< 0.5)
+Ypre  = rand.(Poisson.(exp.(0.5 .+ 0.3 .* z)))
+Ypost = rand.(Poisson.(exp.(0.5 .+ 0.3 .* z .+ 0.2 .+ 0.4 .* (W .* G))))
+df = DataFrame(Ypre = float.(Ypre), Ypost = float.(Ypost), G = G, W = W, z = z)
+res = did_int_2x2(df; yname = :Ypost, yname_pre = :Ypre, treat = :W,
+                  exposure = :G, g = 1, covariates = [:z], family = :poisson)
+round(res.estimate, digits = 3)   # multiplicative ATT at g=1 (truth exp(0.4)-1 ≈ 0.492)
+```
+
 ## Dynamic event study
 
 ```@docs
