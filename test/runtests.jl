@@ -137,3 +137,18 @@ end
     @test res.se > 0
     @test abs(res.estimate - (exp(0.4) - 1)) < 4 * res.se
 end
+
+@testset "did_int_2x2 poisson" begin
+    Random.seed!(7); N = 4000
+    z = randn(N); W = Int.(rand(N) .< 0.5); Ig = Int.(rand(N) .< 0.5)
+    Ypre  = rand.(Poisson.(exp.(0.5 .+ 0.3 .* z)))
+    Ypost = rand.(Poisson.(exp.(0.5 .+ 0.3 .* z .+ 0.2 .+ 0.4 .* (W .* Ig))))
+    df = DataFrame(Ypre = float.(Ypre), Ypost = float.(Ypost), G = Ig, W = W, z = z)
+    res = did_int_2x2(df; yname = :Ypost, yname_pre = :Ypre, treat = :W,
+                      exposure = :G, g = 1, covariates = [:z], family = :poisson)
+    @test res.family == :poisson
+    @test abs(res.estimate - (exp(0.4) - 1)) < 4 * res.se
+    res_g = did_int_2x2(df; yname = :Ypost, yname_pre = :Ypre, treat = :W,
+                        exposure = :G, g = 1, covariates = [:z])
+    @test res_g.exposure_g == 1
+end
