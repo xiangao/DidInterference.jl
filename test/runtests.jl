@@ -153,6 +153,31 @@ end
     @test res_g.exposure_g == 1
 end
 
+@testset "did_int_staggered poisson" begin
+    Random.seed!(3); N = 2500; T = 5
+    z = randn(N)
+    cohort = rand([2.0, 3.0, Inf], N)
+    dij = [abs(z[i] - z[j]) for i in 1:N, j in 1:N]; A = (dij .< 0.3) .& (dij .> 0)
+    deg = max.(vec(sum(A, dims = 2)), 1)
+    rows = NamedTuple[]
+    for i in 1:N, t in 1:T
+        Wt = Int(cohort[i] <= t)
+        Gt = Int(sum(A[i, :] .* (cohort .<= t)) / deg[i] > 0.3)
+        μ = exp(0.4 + 0.3z[i] + 0.05t + 0.4*Wt + 0.3*Gt*Wt)
+        push!(rows, (id = i, time = t, cohort = cohort[i], z = z[i],
+                     Y = float(rand(Poisson(μ))), G = Gt))
+    end
+    d = DataFrame(rows)
+    res = did_int_staggered(d; yname = :Y, time = :time, id = :id, cohort = :cohort,
+                            exposure = :G, g = 1, covariates = [:z], family = :poisson)
+    @test res.family == :poisson
+    @test abs(res.agg.simple.estimate - (exp(0.7) - 1)) < 4 * res.agg.simple.se
+    # gaussian path unchanged
+    res_g = did_int_staggered(d; yname = :Y, time = :time, id = :id, cohort = :cohort,
+                              exposure = :G, g = 1, covariates = [:z])
+    @test isfinite(res_g.agg.simple.estimate)
+end
+
 @testset "did_int_2x2 poisson MC bias/coverage" begin
     truth = exp(0.4) - 1
     R = 300
