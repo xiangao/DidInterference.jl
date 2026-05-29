@@ -33,40 +33,49 @@ A percentage effect on the treated-at-`g`: scale-invariant, defined with zeros, 
 interpretable ("θ×100% more/fewer events"). Reported as `θ(g)` (and `log(1+θ)` internally
 for aggregation).
 
-## 2. Estimator (the core)
+## 2. Estimator (the core) — DR ratio-of-ratios
 
-Write `θ(g) = N/D − 1`:
+The multiplicative ATT at exposure `g` is the **ratio of growth ratios**:
 
-- **Numerator** `N = E[Y_post | W=1, G=g]` — the treated-at-`g` mean; identified directly.
-- **Denominator** `D = E[Y_post(0) | W=1, G=g]` — the counterfactual; carries the DR machinery.
+> `θ(g) = [ E[Y_post|W=1,g] / E[Y_pre|W=1,g] ] / [ E[Y_post|W=0,g] / E[Y_pre|W=0,g] ] − 1`
 
-**Outcome nuisance.** `μ0(X) = E[Y_post | W=0, G=g, X]`, `X=(Z, Y_pre)`, fit by **Poisson
-QMLE** (GLM, log link) on the control-at-`g` cells.
-- Poisson QMLE is consistent for the conditional mean under any true distribution
-  (linear-exponential-family / GMT robustness).
-- `Y_pre` enters as a **covariate, not an offset**, so `Y_pre = 0` cells are fine (no
-  `log 0`). This is the deliberate zero-handling choice.
+In words: how much faster crime grew where a unit got its own treatment than where it
+didn't, at exposure `g`. **Why this is right and the lagged-outcome design is not:** the
+treated growth ratio uses the *same* treated-at-`g` units in numerator and denominator, so
+the latent baseline `E[exp(α+βZ)|·]` cancels — no need to condition on the noisy count
+`Y_pre`, hence no lagged-DV / mean-reversion bias. Group means stay positive even when
+individual `Y_pre = 0`, so zeros are handled.
 
-**DR counterfactual mean** (AIPW for `E[Y(0)|treated]`), reusing the existing treatment
-propensity `p = P(W=1|·)` and exposure propensities `π_{wg}` (same models as `_dr_atte`):
+**Four AIPW means.** Reuse the existing treatment propensity `p=P(W=1|Z)` and exposure
+propensities `π_1g, π_0g` (same models as `_dr_atte`). Add **four Poisson-QMLE outcome
+models** on `Z` (log link, consistent for the mean under any distribution — GMT robustness):
+`m_post1, m_pre1` fit on `(W=1,Ig=1)`; `m_post0, m_pre0` fit on `(W=0,Ig=1)`. Then per unit
+`i` with `Ig=1{G=g}`:
 
-> `D̂ = (1/n_1g) Σ_i 1{G=g} [ W·μ0(X_i) + (1−W)·(p/(1−p))·(Y_post,i − μ0(X_i)) ]`
+```
+ā_post1 = mean_i Ig·[ m_post1(Z) + W/(p·π1g)·(Y_post − m_post1(Z)) ]        → E[Y_post(1)|g]
+ā_pre1  = mean_i Ig·[ m_pre1(Z)  + W/(p·π1g)·(Y_pre  − m_pre1(Z))  ]        → E[Y_pre |W=1,g]
+ā_post0 = mean_i Ig·[ m_post0(Z) + (1−W)/((1−p)·π0g)·(Y_post − m_post0(Z)) ]→ E[Y_post(0)|g]
+ā_pre0  = mean_i Ig·[ m_pre0(Z)  + (1−W)/((1−p)·π0g)·(Y_pre  − m_pre0(Z))  ]→ E[Y_pre |W=0,g]
+```
 
-`D̂` is consistent if **either** `μ0` **or** the propensity model is correct — double
-robustness, preserved on the multiplicative scale.
+Each `ā` is a standard AIPW mean — consistent if **either** its outcome model **or** the
+propensity is right (double robustness, preserved on each of the four means). Then
 
-**Inference.** `θ = N/D − 1`; delta-method influence function
+> `θ(g) = (ā_post1 · ā_pre0) / (ā_pre1 · ā_post0) − 1`.
 
-> `IF_θ = (1/D)·IF_N − (N/D²)·IF_D`
+**Inference (log scale).** `ℓ = log ā_post1 − log ā_pre1 − log ā_post0 + log ā_pre0`
+(`= log(1+θ)`). Each `ā` has a per-unit AIPW influence function `ψ^a_i` (= its bracketed
+summand minus `ā`). By the delta method the per-unit IF of `ℓ` is
 
-where `IF_N`, `IF_D` are the empirical influence functions of the two means (the DR-mean IF
-for `D`, the simple-mean IF for `N`, both restricted to `G=g` with the exposure-propensity
-factors as in the additive engine). Neyman orthogonality ⇒ the plug-in IF (nuisances treated
-as known) is first-order valid, matching the additive engine's treatment of SEs. SE = sqrt
-of summed squared empirical IF.
+> `IF_i = ψ_i^post1/ā_post1 − ψ_i^pre1/ā_pre1 − ψ_i^post0/ā_post0 + ψ_i^pre0/ā_pre0`.
+
+Neyman orthogonality ⇒ the plug-in IF (nuisances treated as known) is first-order valid, as
+in the additive engine. `SE_ℓ = sqrt(Σ IF_i² / n²)`; report `θ = exp(ℓ)−1` with CI
+`exp(ℓ ± z·SE_ℓ) − 1`.
 
 **Staggered aggregation.** Aggregate per-`(c,t)` cells on the **log scale**:
-`log(1+θ_ct) = log N_ct − log D_ct`, using the **same per-cell weights as the additive
+`ℓ_ct = log(1+θ_ct)` (the per-cell log ratio-of-ratios), using the **same per-cell weights as the additive
 aggregator** (`n_total`-proportional). Stack the per-cell log-ratio IFs with the existing
 joint-IF machinery (linear in per-cell IFs, so it carries over unchanged), then exponentiate
 the weighted aggregate. CIs are formed on the log scale and exponentiated. The `event_time`
