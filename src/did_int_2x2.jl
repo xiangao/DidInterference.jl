@@ -1,6 +1,6 @@
 """
     did_int_2x2(data; yname, yname_pre, treat, exposure, g, covariates,
-                trim=nothing, alpha=0.05)
+                trim=nothing, alpha=0.05, family=:gaussian)
 
 Doubly robust direct ATT at exposure level `g` in the two-period
 common-adoption-timing case (Xu 2023). Mirrors the R `did_int_2x2()`.
@@ -14,10 +14,12 @@ common-adoption-timing case (Xu 2023). Mirrors the R `did_int_2x2()`.
 - `g` — target exposure level.
 - `covariates::Vector{Symbol}` — covariate columns.
 - `trim`, `alpha` — see `_dr_atte`.
+- `family::Symbol` — `:gaussian` (default, additive ATT) or `:poisson`
+  (multiplicative ratio-of-ratios ATT for count outcomes).
 
 # Returns
 NamedTuple with `estimate`, `se`, `ci`, `n_treated`, `n_control`,
-`n_total`, `n_at_g`, `n_dropped`, `exposure_g`, `influence`.
+`n_total`, `n_at_g`, `n_dropped`, `exposure_g`, `family`, `influence`.
 
 # Examples
 ```julia
@@ -46,6 +48,7 @@ function did_int_2x2(data::DataFrame;
                      exposure::Symbol,
                      g,
                      covariates::Vector{Symbol},
+                     family::Symbol = :gaussian,
                      trim::Union{Nothing,Real} = nothing,
                      alpha::Real = 0.05)
 
@@ -60,6 +63,13 @@ function did_int_2x2(data::DataFrame;
     all(w -> w == 0 || w == 1, W) ||
         throw(ArgumentError("did_int_2x2: treat must be 0/1"))
 
-    out = _dr_atte(W, Ig, Z, dY; trim = trim, alpha = alpha)
-    return merge(out, (exposure_g = g,))
+    if family === :gaussian
+        out = _dr_atte(W, Ig, Z, dY; trim = trim, alpha = alpha)
+    elseif family === :poisson
+        Ypre  = float.(data[!, yname_pre]); Ypost = float.(data[!, yname])
+        out = _dr_atte_mult(W, Ig, Z, Ypre, Ypost; trim = trim, alpha = alpha)
+    else
+        throw(ArgumentError("did_int_2x2: family must be :gaussian or :poisson"))
+    end
+    return merge(out, (exposure_g = g, family = family))
 end

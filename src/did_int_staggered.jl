@@ -46,7 +46,8 @@ function did_int_staggered(data::DataFrame;
                            cohorts::Union{Nothing,AbstractVector} = nothing,
                            times::Union{Nothing,AbstractVector} = nothing,
                            trim::Union{Nothing,Real} = nothing,
-                           alpha::Real = 0.05)
+                           alpha::Real = 0.05,
+                           family::Symbol = :gaussian)
 
     C_vals = data[!, cohort]
     finite_cohorts = sort(unique(skipmissing(filter(isfinite, C_vals))))
@@ -98,22 +99,42 @@ function did_int_staggered(data::DataFrame;
             continue
         end
 
-        out = try
-            _dr_atte(W, Ig, Z_sm, dY; trim = trim, alpha = alpha)
-        catch e
-            @warn "did_int_staggered: cell (c=$(c_val), t=$(t_val)) failed: $(sprint(showerror, e))"
-            nothing
+        if family === :poisson
+            Ypre_sm  = m[in_sm, :_Y_pre]
+            Ypost_sm = m[in_sm, yname]
+            out = try
+                _dr_atte_mult(W, Ig, Z_sm, Ypre_sm, Ypost_sm; trim = trim, alpha = alpha)
+            catch e
+                @warn "did_int_staggered: cell (c=$(c_val), t=$(t_val)) failed: $(sprint(showerror, e))"
+                nothing
+            end
+            out === nothing && continue
+            push!(rows_buf, (cohort = c_val, time = t_val,
+                             event_time = t_val - c_val,
+                             estimate = out.logest, se = out.se_log,
+                             ci_lo = out.logest - out.se_log,
+                             ci_hi = out.logest + out.se_log,
+                             n_total = out.n_total, n_at_g = out.n_at_g,
+                             n_dropped = out.n_dropped))
+            push!(ifs_buf, out.influence)
+            push!(cell_ids_buf, ids_sm[out.keep_idx])
+        else
+            out = try
+                _dr_atte(W, Ig, Z_sm, dY; trim = trim, alpha = alpha)
+            catch e
+                @warn "did_int_staggered: cell (c=$(c_val), t=$(t_val)) failed: $(sprint(showerror, e))"
+                nothing
+            end
+            out === nothing && continue
+            push!(rows_buf, (cohort = c_val, time = t_val,
+                             event_time = t_val - c_val,
+                             estimate = out.estimate, se = out.se,
+                             ci_lo = out.ci[1], ci_hi = out.ci[2],
+                             n_total = out.n_total, n_at_g = out.n_at_g,
+                             n_dropped = out.n_dropped))
+            push!(ifs_buf, out.influence)
+            push!(cell_ids_buf, ids_sm[out.keep_idx])
         end
-        out === nothing && continue
-
-        push!(rows_buf, (cohort = c_val, time = t_val,
-                         event_time = t_val - c_val,
-                         estimate = out.estimate, se = out.se,
-                         ci_lo = out.ci[1], ci_hi = out.ci[2],
-                         n_total = out.n_total, n_at_g = out.n_at_g,
-                         n_dropped = out.n_dropped))
-        push!(ifs_buf, out.influence)
-        push!(cell_ids_buf, ids_sm[out.keep_idx])
     end
 
     isempty(rows_buf) &&
@@ -160,6 +181,18 @@ function did_int_staggered(data::DataFrame;
          end
          for c_val in sort(unique(per_cell.cohort))])
 
+    if family === :poisson
+        ℓ = agg_simple.estimate; s = agg_simple.se
+        agg_simple = (estimate = exp(ℓ) - 1, se = exp(ℓ) * s,
+                      ci = (exp(agg_simple.ci[1]) - 1, exp(agg_simple.ci[2]) - 1),
+                      n_cells = agg_simple.n_cells)
+        for tbl in (agg_event, agg_cohort)
+            tbl.estimate = exp.(tbl.estimate) .- 1
+            tbl.ci_lo    = exp.(tbl.ci_lo)    .- 1
+            tbl.ci_hi    = exp.(tbl.ci_hi)    .- 1
+        end
+    end
+
     return (per_cell = per_cell,
             agg = (simple = agg_simple,
                    event_time = agg_event,
@@ -168,5 +201,6 @@ function did_int_staggered(data::DataFrame;
             cell_ids  = cell_ids_buf,
             exposure_g = g,
             pre_period = pre,
-            alpha = alpha)
+            alpha = alpha,
+            family = family)
 end
