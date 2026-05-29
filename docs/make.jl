@@ -21,6 +21,7 @@ makedocs(
             "Getting Started"      => "vignettes/01_getting_started.md",
             "Staggered Adoption"   => "vignettes/02_staggered.md",
             "Count Outcomes"       => "vignettes/03_multiplicative.md",
+            "Decomposition"        => "vignettes/04_decomposition.md",
         ],
         "Reference"   => "reference.md",
     ],
