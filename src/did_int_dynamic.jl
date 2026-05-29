@@ -41,7 +41,8 @@ function did_int_dynamic(data::DataFrame;
                          covariates::Vector{Symbol},
                          event_time::Union{Nothing,AbstractVector{<:Integer}} = nothing,
                          trim::Union{Nothing,Real} = nothing,
-                         alpha::Real = 0.05)
+                         alpha::Real = 0.05,
+                         family::Symbol = :gaussian)
 
     K = length(ynames)
     et = isnothing(event_time) ? (0:(K-1)) : event_time
@@ -58,7 +59,8 @@ function did_int_dynamic(data::DataFrame;
                         g         = g,
                         covariates = covariates,
                         trim      = trim,
-                        alpha     = alpha)
+                        alpha     = alpha,
+                        family    = family)
         fits[k] = f
         rows[k] = (event_time = et[k],
                    estimate   = f.estimate,
@@ -71,16 +73,24 @@ function did_int_dynamic(data::DataFrame;
     # Aggregate: simple average; IFs share the same N units across periods,
     # so the aggregate IF is the mean across periods.
     n_units = length(fits[1].influence)
-    if_avg = sum(fits[k].influence for k in 1:K) ./ K
-    est_avg = mean(per_period.estimate)
-    se_avg  = sqrt(sum(if_avg .^ 2) / n_units^2)
     z = quantile(Normal(), 1 - alpha / 2)
+    if_avg = sum(fits[k].influence for k in 1:K) ./ K
+    if family === :gaussian
+        est_avg = mean(per_period.estimate)
+        se_avg  = sqrt(sum(if_avg .^ 2) / n_units^2)
+        agg = (simple_avg = est_avg, se = se_avg,
+               ci = (est_avg - z*se_avg, est_avg + z*se_avg))
+    else  # poisson: per-period estimate is θ_k; influence is log-scale
+        ℓ_avg = mean(log1p.(per_period.estimate))
+        se_ℓ  = sqrt(sum(if_avg .^ 2) / n_units^2)
+        agg = (simple_avg = exp(ℓ_avg) - 1, se = exp(ℓ_avg) * se_ℓ,
+               ci = (exp(ℓ_avg - z*se_ℓ) - 1, exp(ℓ_avg + z*se_ℓ) - 1))
+    end
 
     return (per_period = per_period,
-            agg = (simple_avg = est_avg,
-                   se = se_avg,
-                   ci = (est_avg - z*se_avg, est_avg + z*se_avg)),
+            agg = agg,
             fits = fits,
             exposure_g = g,
+            family = family,
             alpha = alpha)
 end

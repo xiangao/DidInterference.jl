@@ -199,3 +199,19 @@ end
     @test abs(bias) < 0.02
     @test 0.90 <= coverage <= 0.98
 end
+
+@testset "did_int_dynamic poisson" begin
+    Random.seed!(5); N = 3000; K = 3
+    z = randn(N); W = Int.(rand(N) .< 0.5); G = Int.(rand(N) .< 0.5)
+    df = DataFrame(W = W, G = G, z = z,
+                   Y_pre = float.(rand.(Poisson.(exp.(0.4 .+ 0.3 .* z)))))
+    for k in 1:K
+        df[!, Symbol("Y_post_$k")] =
+            float.(rand.(Poisson.(exp.(0.4 .+ 0.3 .* z .+ 0.4 .* W .+ 0.3 .* G .* W))))
+    end
+    res = did_int_dynamic(df; yname_pre = :Y_pre,
+        ynames = [Symbol("Y_post_$k") for k in 1:K], treat = :W, exposure = :G,
+        g = 1, covariates = [:z], family = :poisson)
+    @test res.family == :poisson
+    @test abs(res.agg.simple_avg - (exp(0.7) - 1)) < 4 * res.agg.se
+end
